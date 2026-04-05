@@ -16,6 +16,12 @@ Isaac Gym → ZMQ Bridge → ROS2 Topics → RTAB-Map (SLAM) → YOLOv8 (Object 
 
 ## Setup
 
+Clone the Isaac Gym assets:
+
+```bash
+git clone https://github.com/anubhav1772/isaacgym_assets.git
+```
+
 Build and source your ROS2 workspace:
 
 ```
@@ -103,7 +109,7 @@ Optional additions:
 
 ## Requirements
 
-- Isaac Gym  
+- [Isaac Gym](https://github.com/anubhav1772/isaacgym_assets.git) – simulation environment and assets
 - ROS2 Humble  
 - Python 3.10  
 - ultralytics (YOLOv8)  
