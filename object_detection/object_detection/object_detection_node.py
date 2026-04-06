@@ -6,14 +6,17 @@ import numpy as np
 from object_detection.yolo_detector import YOLOv8Detector
 import struct
 import tf2_ros
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, PointStamped
 from sensor_msgs_py import point_cloud2
+
+from tf2_ros import Buffer, TransformListener
+import tf2_geometry_msgs
 
 class ObjectDetectionNode(Node):
     def __init__(self):
         super().__init__('object_detection_node')
         self.bridge = CvBridge()
-        self.detector = YOLOv8Detector("yolov8n.pt")  # use your trained model
+        self.detector = YOLOv8Detector(self, "yolov8n.pt")  # use your trained model
 
         self.rgb_sub = self.create_subscription(Image, '/camera/rgb/image_raw', self.rgb_callback, 10)
         self.depth_sub = self.create_subscription(Image, '/camera/depth/image_raw', self.depth_callback, 10)
@@ -58,15 +61,87 @@ class ObjectDetectionNode(Node):
             x1, y1, x2, y2, conf, cls_id = det
             u = int((x1 + x2) / 2)
             v = int((y1 + y2) / 2)
-            z = depth[v, u]
-            if z == 0 or np.isnan(z):
+
+            # Single point/pixel
+            # z = depth[v, u]
+            # if z == 0 or np.isnan(z):
+            #     continue
+
+            # Median depth in a small patch
+            # Instead of 1 pixel -> use a small window around (u, v)
+            # patch_size = 5
+            # half = patch_size // 2
+            #
+            # u_min = max(u - half, 0)
+            # u_max = min(u + half, depth.shape[1] - 1)
+            # v_min = max(v - half, 0)
+            # v_max = min(v + half, depth.shape[0] - 1)
+            #
+            # patch = depth[v_min:v_max, u_min:u_max]
+            #
+            # # remove invalid values
+            # valid = patch[(patch > 0.1) & np.isfinite(patch)]
+            #
+            # if len(valid) == 0:
+            #     continue
+            #
+            # z = np.median(valid)
+
+            # Take multiple samples inside bbox
+            samples = []
+            for _ in range(15):
+                uu = np.random.randint(int(x1), int(x2))
+                vv = np.random.randint(int(y1), int(y2))
+
+                if 0 <= vv < depth.shape[0] and 0 <= uu < depth.shape[1]:
+                    z_val = depth[vv, uu]
+
+                    if z_val > 0.1 and np.isfinite(z_val):
+                        samples.append(z_val)
+
+            if len(samples) == 0:
                 continue
-            x = (u - cx) * z / fx
-            y = (v - cy) * z / fy
-            # points_list.append([x, y, z, cls_id])  # class_id as fourth channel
 
+            z = np.median(samples)
+
+            # x = (u - cx) * z / fx
+            # y = (v - cy) * z / fy
+            # # points_list.append([x, y, z, cls_id])  # class_id as fourth channel
+            #
+            # r, g, b = self.class_to_color(cls_id)
+            #
+            # rgb_uint32 = (r << 16) | (g << 8) | b
+            # rgb_float = struct.unpack('f', struct.pack('I', rgb_uint32))[0]
+            #
+            # points_list.extend(self.create_sphere(x, y, z, rgb_float))
+
+            x_cam = (u - cx) * z / fx
+            y_cam = (v - cy) * z / fy
+            z_cam = z
+
+            # Create point in camera frame
+            point_cam = PointStamped()
+            point_cam.header.frame_id = "camera_optical_frame"
+            point_cam.header.stamp = self.get_clock().now().to_msg()
+
+            point_cam.point.x = float(x_cam)
+            point_cam.point.y = float(y_cam)
+            point_cam.point.z = float(z_cam)
+
+            try:
+                # Transform to odom frame
+                point_world = self.tf_buffer.transform(point_cam, "odom")
+
+                x = point_world.point.x
+                y = point_world.point.y
+                z = point_world.point.z
+
+            except Exception as e:
+                self.get_logger().warn(f"TF transform failed: {e}")
+                continue
+
+            # Color
             r, g, b = self.class_to_color(cls_id)
-
             rgb_uint32 = (r << 16) | (g << 8) | b
             rgb_float = struct.unpack('f', struct.pack('I', rgb_uint32))[0]
 
@@ -80,7 +155,14 @@ class ObjectDetectionNode(Node):
                 PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
                 PointField(name='rgb', offset=12, datatype=PointField.FLOAT32, count=1),
             ]
-            pc2_msg = point_cloud2.create_cloud(self.cam_info.header, fields, points_array)
+
+            # frame_id = camera_optical_frame
+            # pc2_msg = point_cloud2.create_cloud(self.cam_info.header, fields, points_array)
+
+            header = self.cam_info.header
+            header.frame_id = "odom"
+
+            pc2_msg = point_cloud2.create_cloud(header, fields, points_array)
             self.pc_pub.publish(pc2_msg)
 
         # reset buffers to avoid duplicate processing
@@ -112,3 +194,4 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
