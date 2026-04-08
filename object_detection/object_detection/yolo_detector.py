@@ -21,43 +21,43 @@ class YOLOv8Detector:
         image: RGB np.ndarray
         returns: list of detections [x1, y1, x2, y2, confidence, class_id]
         """
-        start = time.time()
-        # results = self.model(image, device="cpu")[0]  # take first result
-        # results = self.model(image, device="cpu", conf=0.4)[0]
+        # start = time.time()
+        ## results = self.model(image, device="cpu")[0]  # take first result
+        ## results = self.model(image, device="cpu", conf=0.4)[0]
         results = self.model.predict(image, device="cpu", conf=0.4)[0]
 
-        end = time.time()
+        # end = time.time()
 
-        # inference time
-        inference_time = end - start
+        ## inference time
+        # inference_time = end - start
 
-        # FPS
-        now = time.time()
-        fps = 1.0 / (now - self.prev_time)
-        self.prev_time = now
-        print(f"[YOLO] Inference: {inference_time*1000:.1f} ms | FPS: {fps:.2f}")
-        self.node.get_logger().info(
-            f"[YOLO] Inference: {inference_time*1000:.1f} ms | FPS: {fps:.2f}",
-            throttle_duration_sec=1.0
-            )
+        ## FPS
+        # now = time.time()
+        # fps = 1.0 / (now - self.prev_time)
+        # self.prev_time = now
+        # print(f"[YOLO] Inference: {inference_time*1000:.1f} ms | FPS: {fps:.2f}")
+        # self.node.get_logger().info(
+        #     f"[YOLO] Inference: {inference_time*1000:.1f} ms | FPS: {fps:.2f}",
+        #     throttle_duration_sec=1.0
+        #     )
 
         detections = []
-
-        if results.boxes is None or len(results.boxes) == 0:
-            return detections
-
-        # visualize
-        annotated = results.plot()
-        cv2.putText(annotated,
-                    f"[YOLO] Inference: {inference_time*1000:.1f} ms | FPS: {fps:.2f}",
-                    (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (0, 255, 0),
-                    2
-        )
-        cv2.imshow(f"YOLO", annotated)
-        cv2.waitKey(1)
+        #
+        # if results.boxes is None or len(results.boxes) == 0:
+        #     return detections
+        #
+        # # visualize
+        # annotated = results.plot()
+        # cv2.putText(annotated,
+        #             f"[YOLO] Inference: {inference_time*1000:.1f} ms | FPS: {fps:.2f}",
+        #             (10, 30),
+        #             cv2.FONT_HERSHEY_SIMPLEX,
+        #             0.7,
+        #             (0, 255, 0),
+        #             2
+        # )
+        # cv2.imshow(f"YOLO", annotated)
+        # cv2.waitKey(1)
 
         # debug class names
         # for cls in results.boxes.cls:
@@ -81,4 +81,3 @@ class YOLOv8Detector:
             detections.append([x1, y1, x2, y2, conf, cls])
 
         return detections
-
