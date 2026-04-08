@@ -8,9 +8,11 @@ import struct
 import tf2_ros
 from geometry_msgs.msg import TransformStamped, PointStamped
 from sensor_msgs_py import point_cloud2
+from visualization_msgs.msg import Marker, MarkerArray
 
 from tf2_ros import Buffer, TransformListener
 import tf2_geometry_msgs
+from std_msgs.msg import Header
 
 class ObjectDetectionNode(Node):
     def __init__(self):
@@ -18,10 +20,13 @@ class ObjectDetectionNode(Node):
         self.bridge = CvBridge()
         self.detector = YOLOv8Detector(self, "yolov8n.pt")  # use your trained model
 
+        # subscribers
         self.rgb_sub = self.create_subscription(Image, '/camera/rgb/image_raw', self.rgb_callback, 10)
         self.depth_sub = self.create_subscription(Image, '/camera/depth/image_raw', self.depth_callback, 10)
         self.cam_info_sub = self.create_subscription(CameraInfo, '/camera/rgb/camera_info', self.cam_info_callback, 10)
 
+        # publishers
+        self.marker_pub = self.create_publisher(MarkerArray, "/detected_objects_markers", 10)
         self.pc_pub = self.create_publisher(PointCloud2, '/detected_objects', 10)
 
         self.latest_rgb = None
@@ -43,6 +48,74 @@ class ObjectDetectionNode(Node):
         self.latest_rgb = self.bridge.imgmsg_to_cv2(msg, "rgb8")
         self.try_process()
 
+    def publish_markers(self, detections, header):
+        print("PUBLISH MARKERS CALLED, count:", len(detections))
+        marker_array = MarkerArray()
+
+        for i, det in enumerate(detections):
+
+            x, y, z = det["pos"]
+            label = det["label"]
+
+            # CUBE (bounding proxy)
+            cube = Marker()
+            # cube.header = header
+            cube.header.frame_id = "odom"
+            cube.header.stamp = self.get_clock().now().to_msg()
+            cube.ns = "objects"
+            cube.id = i
+            cube.type = Marker.CUBE
+            cube.action = Marker.ADD
+
+            cube.pose.position.x = x
+            cube.pose.position.y = y
+            cube.pose.position.z = z
+
+            cube.pose.orientation.w = 1.0
+
+            cube.scale.x = 0.3
+            cube.scale.y = 0.3
+            cube.scale.z = 0.3
+
+            cube.color.r = 1.0
+            cube.color.g = 0.0
+            cube.color.b = 0.0
+            cube.color.a = 0.8
+
+            cube.lifetime.sec = 1
+
+            marker_array.markers.append(cube)
+
+            # TEXT LABEL
+            text = Marker()
+            # text.header = header
+            text.header.frame_id = "odom"
+            text.header.stamp = self.get_clock().now().to_msg()
+            text.ns = "labels"
+            text.id = i + 1000
+            text.type = Marker.TEXT_VIEW_FACING
+            text.action = Marker.ADD
+
+            text.pose.position.x = x
+            text.pose.position.y = y
+            text.pose.position.z = z + 0.4 # above object
+
+            text.pose.orientation.w = 1.0
+
+            text.scale.z = 0.3
+            text.color.r = 1.0
+            text.color.g = 1.0
+            text.color.b = 1.0
+            text.color.a = 1.0
+
+            text.text = label
+
+            text.lifetime.sec = 1
+
+            marker_array.markers.append(text)
+
+        self.marker_pub.publish(marker_array)
+
     def try_process(self):
         if self.latest_rgb is None or self.latest_depth is None or self.cam_info is None:
             return
@@ -55,6 +128,8 @@ class ObjectDetectionNode(Node):
         cy = self.cam_info.k[5]
 
         detections = self.detector.detect(rgb)
+
+        detections_out = []
 
         points_list = []
         for det in detections:
@@ -129,7 +204,7 @@ class ObjectDetectionNode(Node):
             point_cam.point.z = float(z_cam)
 
             try:
-                # Transform to odom frame
+                # Transform to odom/world frame
                 point_world = self.tf_buffer.transform(point_cam, "odom")
 
                 x = point_world.point.x
@@ -140,12 +215,33 @@ class ObjectDetectionNode(Node):
                 self.get_logger().warn(f"TF transform failed: {e}")
                 continue
 
+            class_name = self.detector.model.names[cls_id]
+            detections_out.append({
+                "pos": (
+                    x,
+                    y,
+                    z
+                ),
+                "label": class_name,
+                "id": cls_id
+            })
+
             # Color
             r, g, b = self.class_to_color(cls_id)
             rgb_uint32 = (r << 16) | (g << 8) | b
             rgb_float = struct.unpack('f', struct.pack('I', rgb_uint32))[0]
 
             points_list.extend(self.create_sphere(x, y, z, rgb_float))
+
+        if detections_out:
+            # header = self.cam_info.header
+
+            header = Header()
+            header.stamp = self.get_clock().now().to_msg()
+            header.frame_id = "odom"
+
+            # publish markers
+            self.publish_markers(detections_out, header)
 
         if points_list:
             points_array = np.array(points_list, dtype=np.float32)
@@ -194,4 +290,3 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-
