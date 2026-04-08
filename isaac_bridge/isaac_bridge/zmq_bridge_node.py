@@ -38,6 +38,7 @@ class ZMQBridge(Node):
         # DEBUG via: ros2 topic echo /tf_static
         # MUST contain base_link -> camera_link & camera_link -> camera_imu_frame
         self.publish_static_transforms()
+        self.initial_pose = None
 
         self.bridge = CvBridge()
 
@@ -333,15 +334,30 @@ class ZMQBridge(Node):
             # ODOM (GROUND TRUTH)
             pose = data["pose"]
 
+            p = pose["position"]
+
+            # store initial pose once
+            if self.initial_pose is None:
+                self.initial_pose = p
+
+            # subtract initial offset
+            x = float(p[0] - self.initial_pose[0])
+            y = float(p[1] - self.initial_pose[1])
+
             odom = Odometry()
             odom.header.stamp = now
             odom.header.frame_id = "odom"
             odom.child_frame_id = "base_link"
 
             # position
-            odom.pose.pose.position.x = float(pose["position"][0])
-            odom.pose.pose.position.y = float(pose["position"][1])
-            odom.pose.pose.position.z = float(pose["position"][2])
+            # odom.pose.pose.position.x = float(pose["position"][0])
+            # odom.pose.pose.position.y = float(pose["position"][1])
+            # odom.pose.pose.position.z = float(pose["position"][2]) # ~ 0.30 (base of aliengo)
+
+            odom.pose.pose.position.x = x
+            odom.pose.pose.position.y = y
+            odom.pose.pose.position.z = 0.0
+            odom.pose.pose.position.z = 0.0
 
             # orientation
             odom.pose.pose.orientation.x = float(pose["orientation"][0])
@@ -366,9 +382,13 @@ class ZMQBridge(Node):
             t.header.frame_id = "odom"
             t.child_frame_id = "base_link"
 
-            t.transform.translation.x = float(pose["position"][0])
-            t.transform.translation.y = float(pose["position"][1])
-            t.transform.translation.z = float(pose["position"][2])
+            # t.transform.translation.x = float(pose["position"][0])
+            # t.transform.translation.y = float(pose["position"][1])
+            # t.transform.translation.z = float(pose["position"][2])
+
+            t.transform.translation.x = x
+            t.transform.translation.y = y
+            t.transform.translation.z = 0.0
 
             t.transform.rotation.x = float(pose["orientation"][0])
             t.transform.rotation.y = float(pose["orientation"][1])
