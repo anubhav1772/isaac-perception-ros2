@@ -48,13 +48,17 @@ Publishes:
 
 ### Terminal 3 — SLAM (RTAB-Map)
 ```
-ros2 run rtabmap_slam rtabmap --ros-args
--r rgb/image:=/camera/rgb/image_raw
--r depth/image:=/camera/depth/image_raw
--r rgb/camera_info:=/camera/rgb/camera_info
--r odom:=/ground_truth/odom
--p frame_id:=base_link
--p approx_sync:=true
+ros2 run rtabmap_slam rtabmap --ros-args \
+  -r rgb/image:=/camera/rgb/image_raw \
+  -r depth/image:=/camera/depth/image_raw \
+  -r rgb/camera_info:=/camera/rgb/camera_info \
+  -r odom:=/ground_truth/odom \
+  -p frame_id:=base_link \
+  -p approx_sync:=true
+```
+Alternatively,
+```
+ros2 run rtabmap_slam rtabmap --ros-args -r rgb/image:=/camera/rgb/image_raw -r depth/image:=/camera/depth/image_raw -r rgb/camera_info:=/camera/rgb/camera_info -r odom:=/ground_truth/odom -p frame_id:=base_link -p approx_sync:=true
 ```
 
 Builds:
