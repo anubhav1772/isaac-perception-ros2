@@ -4,7 +4,7 @@ from sensor_msgs.msg import Image, Imu, CameraInfo
 from cv_bridge import CvBridge
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Twist
 from sensor_msgs.msg import PointCloud2, PointField
 from tf2_ros import StaticTransformBroadcaster
 import struct
@@ -19,7 +19,7 @@ class ZMQBridge(Node):
     def __init__(self):
         super().__init__('isaac_zmq_bridge')
 
-        # ROS publishers
+
         self.rgb_pub = self.create_publisher(Image, '/camera/rgb/image_raw', 10)
         self.depth_pub = self.create_publisher(Image, '/camera/depth/image_raw', 10)
 
@@ -28,6 +28,10 @@ class ZMQBridge(Node):
         self.imu_pub = self.create_publisher(Imu, '/camera/imu', 10)
         self.pc_pub = self.create_publisher(PointCloud2, '/camera/points', 10)
         self.cam_info_pub = self.create_publisher(CameraInfo, '/camera/rgb/camera_info', 10)
+
+        # ROS subscribers
+        # velocity commands
+        self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_callback, 10)
 
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
@@ -38,7 +42,7 @@ class ZMQBridge(Node):
         # DEBUG via: ros2 topic echo /tf_static
         # MUST contain base_link -> camera_link & camera_link -> camera_imu_frame
         self.publish_static_transforms()
-        self.initial_pose = None
+        # self.initial_pose = None
 
         self.bridge = CvBridge()
 
@@ -48,9 +52,22 @@ class ZMQBridge(Node):
         self.socket.connect("tcp://localhost:5555")
         self.socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
+        # ZMQ publisher for commands (ROS2 to Isaac)
+        self.cmd_socket = context.socket(zmq.PUB)
+        self.cmd_socket.bind("tcp://*:5556")
+
         # timer to poll ZMQ
         # self.timer = self.create_timer(0.03, self.receive_data)  # ~30 Hz
         self.timer = self.create_timer(0.1, self.receive_data)  # ~10 Hz
+
+    def cmd_callback(self, msg):
+        # print(f"[ROS2] cmd_vel received: vx={msg.linear.x}, w={msg.angular.z}")
+        data = {
+            "vx": msg.linear.x,
+            "vy": msg.linear.y,
+            "w":  msg.angular.z
+        }
+        self.cmd_socket.send(pickle.dumps(data))
 
     # def publish_camera_tf(self):
     #     t = TransformStamped()
@@ -337,12 +354,15 @@ class ZMQBridge(Node):
             p = pose["position"]
 
             # store initial pose once
-            if self.initial_pose is None:
-                self.initial_pose = p
+            # if self.initial_pose is None:
+            #     self.initial_pose = p
 
             # subtract initial offset
-            x = float(p[0] - self.initial_pose[0])
-            y = float(p[1] - self.initial_pose[1])
+            # x = float(p[0] - self.initial_pose[0])
+            # y = float(p[1] - self.initial_pose[1])
+
+            x = float(p[0])
+            y = float(p[1])
 
             odom = Odometry()
             odom.header.stamp = now
