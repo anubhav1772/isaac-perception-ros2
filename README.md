@@ -47,8 +47,20 @@ Publishes:
 - /ground_truth/odom
 
 ### Terminal 3 — SLAM (RTAB-Map)
-```
-ros2 run rtabmap_slam rtabmap --ros-args \
+
+Start RTAB-Map with RGB-D input and ground-truth odometry:
+
+```bash
+ros2 run rtabmap_slam rtabmap \
+  --delete_db_on_start \
+  --RGBD/CreateOccupancyGrid true \
+  --Grid/Sensor 1 \
+  --Grid/3D false \
+  --Grid/RangeMin 0.1 \
+  --Grid/RangeMax 5.0 \
+  --Grid/CellSize 0.05 \
+  --Reg/Force3DoF true \
+  --ros-args \
   -r rgb/image:=/camera/rgb/image_raw \
   -r depth/image:=/camera/depth/image_raw \
   -r rgb/camera_info:=/camera/rgb/camera_info \
@@ -56,15 +68,23 @@ ros2 run rtabmap_slam rtabmap --ros-args \
   -p frame_id:=base_link \
   -p approx_sync:=true
 ```
-Alternatively,
+  
+Alternatively, as a single command:
 ```
-ros2 run rtabmap_slam rtabmap --ros-args -r rgb/image:=/camera/rgb/image_raw -r depth/image:=/camera/depth/image_raw -r rgb/camera_info:=/camera/rgb/camera_info -r odom:=/ground_truth/odom -p frame_id:=base_link -p approx_sync:=true
+ros2 run rtabmap_slam rtabmap --delete_db_on_start --RGBD/CreateOccupancyGrid true --Grid/Sensor 1 --Grid/3D false --Grid/RangeMin 0.1 --Grid/RangeMax 5.0 --Grid/CellSize 0.05 --Reg/Force3DoF true --ros-args -r rgb/image:=/camera/rgb/image_raw -r depth/image:=/camera/depth/image_raw -r rgb/camera_info:=/camera/rgb/camera_info -r odom:=/ground_truth/odom -p frame_id:=base_link -p approx_sync:=true
 ```
 
-Builds:
-- 3D map  
-- occupancy grid  
-- pose graph  
+This configuration provides:
+- RGB-D SLAM using the simulated camera
+- RTAB-Map pose graph
+- 2D occupancy grid for Nav2
+- 5 cm occupancy-grid resolution
+- Depth observations between 0.1 m and 5.0 m
+- Planar (3DoF) registration suitable for ground navigation
+- `map → odom` transform from RTAB-Map
+- Fresh RTAB-Map database on every run
+
+--`delete_db_on_start` is useful during development and repeatable mapping tests. Remove it when you want RTAB-Map to reuse an existing database.
 
 ### Terminal 4 — Object Detection
 ```
