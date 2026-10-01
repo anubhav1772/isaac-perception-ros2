@@ -39,6 +39,9 @@ class ZMQBridge(Node):
         # self.publish_camera_tf()
         # self.publish_imu_tf()
 
+        # Publish room-center TF only once
+        self.room_center_tf_published = False
+
         # DEBUG via: ros2 topic echo /tf_static
         # MUST contain base_link -> camera_link & camera_link -> camera_imu_frame
         self.publish_static_transforms()
@@ -291,6 +294,39 @@ class ZMQBridge(Node):
             data = pickle.loads(msg)
 
             now = self.get_clock().now().to_msg()
+
+            # Isaac bounded-room center
+            # odom = Isaac world frame
+            # isaac_room_center = physical center of the room
+            room_center = data.get("room_center", None)
+
+            if room_center is not None and not self.room_center_tf_published:
+
+                t_room = TransformStamped()
+
+                t_room.header.stamp = now
+                t_room.header.frame_id = "odom"
+                t_room.child_frame_id = "isaac_room_center"
+
+                # Position of the physical room center in Isaac/odom coordinates
+                t_room.transform.translation.x = float(room_center[0])
+                t_room.transform.translation.y = float(room_center[1])
+                t_room.transform.translation.z = 0.0
+
+                # Same orientation as Isaac world
+                t_room.transform.rotation.x = 0.0
+                t_room.transform.rotation.y = 0.0
+                t_room.transform.rotation.z = 0.0
+                t_room.transform.rotation.w = 1.0
+
+                self.static_tf_broadcaster.sendTransform(t_room)
+
+                self.room_center_tf_published = True
+
+                self.get_logger().info(
+                    f"Published odom -> isaac_room_center at "
+                    f"({room_center[0]:.3f}, {room_center[1]:.3f})"
+                )
 
             # RGB + DEPTH
             rgb = data["rgb"]
