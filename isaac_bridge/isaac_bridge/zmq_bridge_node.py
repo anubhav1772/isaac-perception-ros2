@@ -34,7 +34,12 @@ class ZMQBridge(Node):
         self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_callback, 10)
 
         self.tf_broadcaster = TransformBroadcaster(self)
+
+        # Sensor static transforms
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
+
+        # Environment reference transform
+        self.room_static_tf_broadcaster = StaticTransformBroadcaster(self)
 
         # self.publish_camera_tf()
         # self.publish_imu_tf()
@@ -319,7 +324,7 @@ class ZMQBridge(Node):
                 t_room.transform.rotation.z = 0.0
                 t_room.transform.rotation.w = 1.0
 
-                self.static_tf_broadcaster.sendTransform(t_room)
+                self.room_static_tf_broadcaster.sendTransform(t_room)
 
                 self.room_center_tf_published = True
 
