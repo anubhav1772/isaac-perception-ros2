@@ -86,7 +86,7 @@ This configuration provides:
 
 --`delete_db_on_start` is useful during development and repeatable mapping tests. Remove it when you want RTAB-Map to reuse an existing database.
 
-### Terminal 5 — Nav2 Navigation
+### Terminal 4 — Nav2 Navigation
 
 Launch the Nav2 navigation stack using the AlienGo-specific configuration:
 
