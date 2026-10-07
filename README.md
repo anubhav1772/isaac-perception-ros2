@@ -86,7 +86,51 @@ This configuration provides:
 
 --`delete_db_on_start` is useful during development and repeatable mapping tests. Remove it when you want RTAB-Map to reuse an existing database.
 
-### Terminal 4 — Object Detection
+### Terminal 5 — Nav2 Navigation
+
+Launch the Nav2 navigation stack using the AlienGo-specific configuration:
+
+```bash
+ros2 launch nav2_bringup navigation_launch.py \
+  use_sim_time:=false \
+  autostart:=true \
+  params_file:=$HOME/ros2_ws/src/robot_autonomy/config/nav2_aliengo.yaml
+```
+
+RTAB-Map provides the global occupancy map and the `map → odom` transform, while Nav2 handles global planning, local control, costmaps, behavior-tree navigation, and velocity command generation.
+
+This setup uses:
+- `map` as the global navigation frame
+- `odom` as the local costmap frame
+- `base_link` as the robot base frame
+- `/ground_truth/odom` as the odometry source
+- `/map` from RTAB-Map as the global occupancy map
+- `/camera/points` as the local obstacle source
+
+Verify that Nav2 is active:
+```
+ros2 action info /navigate_to_pose
+```
+
+Expected:
+```
+Action servers: 1
+    /bt_navigator
+```
+
+You can also verify the main lifecycle nodes:
+```
+ros2 lifecycle get /planner_server
+ros2 lifecycle get /controller_server
+ros2 lifecycle get /bt_navigator
+```
+
+Each should report:
+```
+active [3]
+```
+
+### Terminal 5 — Object Detection
 ```
 ros2 run object_detection object_detection_node
 ```
@@ -94,10 +138,15 @@ Publishes:
 
 - /detected_objects (PointCloud2)
 
-### Terminal 5 — Visualization
+### Terminal 6 — Visualization
+
+Launch RViz2 with the default Nav2 configuration:
+
+```bash
+rviz2 -d $(ros2 pkg prefix --share nav2_bringup)/rviz/nav2_default_view.rviz
 ```
-rviz2
-```
+
+This loads the Nav2 visualization panels, costmaps, planner/controller displays, and navigation goal tools.
 
 ## Recommended configuration:
 
