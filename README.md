@@ -107,6 +107,33 @@ This setup uses:
 - `/map` from RTAB-Map as the global occupancy map
 - `/camera/points` as the local obstacle source
 
+#### Global Mapping vs. Local Obstacle Avoidance
+
+This stack separates global mapping from local obstacle avoidance:
+
+- **RTAB-Map** is configured with `Grid/3D=false` and generates the global
+  2D occupancy grid (`/map`) used by Nav2 for global path planning.
+- **Nav2's local VoxelLayer** consumes the RGB-D point cloud
+  (`/camera/points`) and maintains a local 3D voxel representation around
+  the robot for obstacle detection and collision avoidance.
+
+The resulting navigation architecture is:
+
+```text
+RGB-D Camera
+    |
+    +--> RTAB-Map
+    |       |
+    |       +--> /map (2D occupancy grid)
+    |               |
+    |               +--> Nav2 global planner
+    |
+    +--> /camera/points
+            |
+            +--> Nav2 VoxelLayer
+                    |
+                    +--> local obstacle avoidance
+
 Verify that Nav2 is active:
 ```
 ros2 action info /navigate_to_pose
@@ -129,6 +156,33 @@ Each should report:
 ```
 active [3]
 ```
+
+#### Test Navigation with an RViz Nav2 Goal
+
+After Nav2 and RViz are running, test the closed-loop navigation pipeline using the **Nav2 Goal** tool in RViz.
+
+Set the RViz **Fixed Frame** to: `map`
+
+```text
+Then:
+1. Select Nav2 Goal from the RViz toolbar.
+2. Click at the location in the map where the robot should navigate.
+3. While holding the mouse button, drag the arrow to specify the desired
+   final orientation.
+4. Release the mouse button to send the NavigateToPose goal.
+
+Important: The start of the arrow is the goal position.
+The arrow direction specifies the goal orientation.
+The arrow length does not specify the travel distance.
+
+For example, to command the robot to move approximately 1–2 m forward,
+place the start of the goal arrow approximately 1–2 m ahead of the
+current robot position rather than placing it directly on the robot.
+```
+
+A successful navigation request should result in:
+
+RViz Nav2 Goal → NavigateToPose → Global Planner → DWB Local Controller → /cmd_vel → ROS2 → ZMQ → Isaac Gym → RL Locomotion Policy → AlienGo
 
 ### Terminal 5 — Object Detection
 ```
