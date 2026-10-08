@@ -133,6 +133,7 @@ RGB-D Camera
             +--> Nav2 VoxelLayer
                     |
                     +--> local obstacle avoidance
+```
 
 Verify that Nav2 is active:
 ```
