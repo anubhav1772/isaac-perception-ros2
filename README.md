@@ -34,17 +34,30 @@ source install/setup.bash
 python scripts/explore.py
 ```
 
-### Terminal 2 — Isaac to ROS Bridge
-```
+### Terminal 2 — ROS2 ↔ Isaac ZMQ Bridges
+
+Run the sensor bridge:
+
+```bash
 ros2 run isaac_bridge zmq_bridge
 ```
 
-Publishes:
-
-- /camera/rgb/image_raw  
-- /camera/depth/image_raw  
-- /camera/rgb/camera_info  
+This publishes:
+- /camera/rgb/image_raw
+- /camera/depth/image_raw
+- /camera/rgb/camera_info
+- /camera/points
+- /camera/imu
 - /ground_truth/odom
+- TF from odom to base_link
+
+Run the dedicated velocity-command bridge in a separate terminal:
+
+```bash
+ros2 run isaac_bridge cmd_vel_zmq_bridge
+```
+
+This subscribes to `/cmd_vel` and forwards `[vx, vy, wz]` commands to Isaac Gym over ZMQ.
 
 ### Terminal 3 — SLAM (RTAB-Map)
 
