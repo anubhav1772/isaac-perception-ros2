@@ -2,6 +2,14 @@
 
 # AlienGo + Isaac Gym + ROS2 Perception Pipeline
 
+<table>
+  <tr>
+    <td>
+      <img src="media/scene_1.png" width="700" height="150">
+    </td>
+  </tr>
+</table>
+
 This project integrates:
 
 - AlienGo (Isaac Gym) for simulation  
