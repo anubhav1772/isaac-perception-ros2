@@ -22,6 +22,7 @@ setup(
     'console_scripts': [
         'camera_node = isaac_bridge.camera_node:CameraPublisher',
         'zmq_bridge = isaac_bridge.zmq_bridge_node:main',
+        'cmd_vel_zmq_bridge = isaac_bridge.cmd_vel_zmq_bridge:main',
         ],
     },
 )
