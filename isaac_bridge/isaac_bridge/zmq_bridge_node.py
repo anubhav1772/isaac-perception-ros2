@@ -31,7 +31,7 @@ class ZMQBridge(Node):
 
         # ROS subscribers
         # velocity commands
-        self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_callback, 10)
+        # self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_callback, 10)
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -61,21 +61,21 @@ class ZMQBridge(Node):
         self.socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
         # ZMQ publisher for commands (ROS2 to Isaac)
-        self.cmd_socket = context.socket(zmq.PUB)
-        self.cmd_socket.bind("tcp://*:5556")
+        # self.cmd_socket = context.socket(zmq.PUB)
+        # self.cmd_socket.bind("tcp://*:5556")
 
         # timer to poll ZMQ
         # self.timer = self.create_timer(0.03, self.receive_data)  # ~30 Hz
         self.timer = self.create_timer(0.1, self.receive_data)  # ~10 Hz
 
-    def cmd_callback(self, msg):
-        # print(f"[ROS2] cmd_vel received: vx={msg.linear.x}, w={msg.angular.z}")
-        data = {
-            "vx": msg.linear.x,
-            "vy": msg.linear.y,
-            "w":  msg.angular.z
-        }
-        self.cmd_socket.send(pickle.dumps(data))
+    # def cmd_callback(self, msg):
+    #     # print(f"[ROS2] cmd_vel received: vx={msg.linear.x}, w={msg.angular.z}")
+    #     data = {
+    #         "vx": msg.linear.x,
+    #         "vy": msg.linear.y,
+    #         "w":  msg.angular.z
+    #     }
+    #     self.cmd_socket.send(pickle.dumps(data))
 
     # def publish_camera_tf(self):
     #     t = TransformStamped()
