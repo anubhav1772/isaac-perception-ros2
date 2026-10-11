@@ -5,7 +5,7 @@
 <table>
   <tr>
     <td>
-      <img src="media/scene_1.png" width="700" height="150">
+      <img src="media/scene_1.png" width="950" height="350">
     </td>
   </tr>
 </table>
