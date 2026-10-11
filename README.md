@@ -206,7 +206,25 @@ A successful navigation request should result in:
 
 RViz Nav2 Goal → NavigateToPose → Global Planner → DWB Local Controller → /cmd_vel → ROS2 → ZMQ → Isaac Gym → RL Locomotion Policy → AlienGo
 
-### Terminal 5 — Object Detection
+### Terminal 5 — Frontier Exploration
+
+Launch the frontier exploration node using the AlienGo-specific configuration:
+
+```bash
+ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
+  params_file:=$HOME/ros2_ws/src/robot_autonomy/config/frontier_aliengo.yaml \
+  use_sim_time:=false
+```
+
+Start autonomous frontier exploration:
+
+```bash
+ros2 run frontier_exploration_ros2 frontier_exploration_ctl start
+```
+
+The explorer selects frontier goals from the current map and sends them to Nav2 through the `NavigateToPose` action.
+
+### Terminal 6 — Object Detection
 ```
 ros2 run object_detection object_detection_node
 ```
@@ -214,7 +232,7 @@ Publishes:
 
 - /detected_objects (PointCloud2)
 
-### Terminal 6 — Visualization
+### Terminal 7 — Visualization
 
 Launch RViz2 with the default Nav2 configuration:
 
