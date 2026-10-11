@@ -12,10 +12,10 @@ import struct
 import zmq
 import pickle
 import numpy as np
+import time
 
 
 class ZMQBridge(Node):
-
     def __init__(self):
         super().__init__('isaac_zmq_bridge')
 
@@ -56,7 +56,15 @@ class ZMQBridge(Node):
 
         # ZMQ subscriber
         context = zmq.Context()
+
+        # Isaac Gym -> ROS2 sensor stream
         self.socket = context.socket(zmq.SUB)
+
+        # Keep only the newest sensor packet.
+        # Old RGB/depth/odom packets are useless for real-time navigation.
+        self.socket.setsockopt(zmq.RCVHWM, 1)
+        self.socket.setsockopt(zmq.CONFLATE, 1)
+
         self.socket.connect("tcp://localhost:5555")
         self.socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
@@ -297,6 +305,14 @@ class ZMQBridge(Node):
         try:
             msg = self.socket.recv(flags=zmq.NOBLOCK)
             data = pickle.loads(msg)
+
+            # Measure how old this Isaac sensor packet actually is
+            sensor_age = time.time() - float(data["timestamp"])
+
+            if sensor_age > 0.2:
+                self.get_logger().warn(
+                    f"Sensor packet age: {sensor_age:.3f} s"
+                )
 
             now = self.get_clock().now().to_msg()
 
