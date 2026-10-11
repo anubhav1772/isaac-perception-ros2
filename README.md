@@ -12,15 +12,19 @@
 
 This project integrates:
 
-- AlienGo (Isaac Gym) for simulation  
-- ROS2 bridge (ZMQ) for sensor streaming  
-- RTAB-Map for SLAM  
-- YOLOv8 for object detection  
-- RViz2 for visualization  
+- **AlienGo in Isaac Gym** with a learned RL locomotion policy
+- **ROS2 ↔ Isaac Gym ZMQ bridges** for sensor and velocity-command transport
+- **RTAB-Map** for RGB-D SLAM and occupancy-grid mapping
+- **Nav2** for path planning, local control, and obstacle avoidance
+- **Frontier exploration** for autonomous environment coverage, serving as a baseline for future learning-based exploration and planning methods
+- **YOLOv8** for object detection
+- **RViz2** for visualization and navigation debugging
 
 ## Pipeline Overview
 
-Isaac Gym → ZMQ Bridge → ROS2 Topics → RTAB-Map (SLAM) → YOLOv8 (Object Detection) → RViz Visualization 
+Isaac Gym → ROS2/ZMQ → RTAB-Map → Frontier Exploration → Nav2 → `/cmd_vel` → RL Locomotion → AlienGo
+
+YOLOv8 runs in parallel on the camera stream for object detection, while RViz2 visualizes the map, paths, costmaps, TF, point clouds, and detections.
 
 ## Setup
 
