@@ -118,7 +118,7 @@ frontier_explorer:
 
     # Replan while navigating if target-pose visible reveal gain
     # for the active goal is exhausted.
-    goal_preemption_enabled: true
+    goal_preemption_enabled: false #true
 
     # Minimum seconds between consecutive goal preemption attempts.
     goal_preemption_min_interval_s: 2.0
@@ -128,18 +128,20 @@ frontier_explorer:
 
     # Enable post-goal settle delay after a successful frontier goal.
     # Useful for slow SLAM/sensor configurations.
-    post_goal_settle_enabled: false
+    post_goal_settle_enabled: true #false
 
     # Minimum seconds to wait before selecting the next frontier
     # after a successful goal.
-    post_goal_min_settle: 1.50
+    post_goal_min_settle: 2.0 #1.50
 
     # Enable temporary suppression for frontiers that repeatedly fail or stall.
-    frontier_suppression_enabled: false
+    # Prevent repeated attempts at the same bad region
+    frontier_suppression_enabled: true #false
 
     # Behavior when frontiers exist but all are temporarily suppressed.
     # Requires frontier_suppression_enabled: true.
-    all_frontiers_suppressed_behavior: return_to_start
+    # While debugging, don't automatically return toward the same start corner
+    all_frontiers_suppressed_behavior: stay #return_to_start
 
 
     # ============================================================
@@ -175,7 +177,7 @@ frontier_explorer:
     #
     # This DOES NOT command AlienGo.
     # It is only used for estimating frontier traversal time.
-    max_linear_speed_vmax: 0.50
+    max_linear_speed_vmax: 0.30 #0.50
 
     # Maximum angular speed used in the heading-change component
     # of the time lower bound.
@@ -197,11 +199,12 @@ frontier_explorer:
     #
     # Package recommendation:
     # approximately 2.5 x robot radius.
-    frontier_selection_min_distance: 0.8
+    # AlienGo is fairly large relative to TurtleBot-style defaults
+    frontier_selection_min_distance: 1.0 #0.8
 
     # Distance used to treat a frontier region as recently visited.
     # Useful for preventing navigation loops.
-    frontier_visit_tolerance: 0.40
+    frontier_visit_tolerance: 0.50 #0.40
 
 
     # --------------- Map Optimization --------------- #
@@ -210,7 +213,7 @@ frontier_explorer:
     #
     # Prevents trivially close goals that do not significantly
     # advance exploration.
-    frontier_candidate_min_goal_distance_m: 0.8
+    frontier_candidate_min_goal_distance_m: 1.0 #0.8
 
     # Occupancy threshold applied to the global costmap during
     # frontier validation.
@@ -218,7 +221,9 @@ frontier_explorer:
     # Neighbor cells at or above this cost are considered blocked.
     #
     # Range: 0-100.
-    occ_threshold: 65
+
+    # Slightly more conservative about inflated costmap areas
+    occ_threshold: 50 #65
 
     # Minimum connected frontier size accepted by WFD, in cells.
     #
@@ -295,11 +300,11 @@ frontier_explorer:
 
     # Maximum allowed time without meaningful navigation progress
     # before a frontier goal is canceled.
-    frontier_suppression_no_progress_timeout_s: 20.0
+    frontier_suppression_no_progress_timeout_s: 45.0 #20.0
 
     # Minimum distance_remaining improvement required to count
     # as navigation progress.
-    frontier_suppression_progress_epsilon_m: 0.25
+    frontier_suppression_progress_epsilon_m: 0.1 #0.25
 
     # Startup grace period before suppression logic becomes active.
     #
